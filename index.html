@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Wallpaper Downloader</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
+        crossorigin="anonymous">
+    <style>
+        .background {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+
+            background-position: center;
+            /* Center the image */
+            background-repeat: no-repeat;
+            /* Do not repeat the image */
+            background-size: cover;
+            /* Resize the background image to cover the entire container */
+
+            z-index: -1;
+        }
+
+        img {
+            height: 100%;
+            width: 100%;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            /* Set the fixed height of the footer here */
+            height: 60px;
+        }
+
+        .footer-box {
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-right: 5px;
+            padding-left: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background">
+    </div>
+    <footer class="footer d-flex p-2 justify-content-center">
+        <div class="col-md-6 footer-box row">
+            <div class="col-sm-3 buttons">
+                <button class="btn btn-info" id="random">Random</button>
+            </div>
+            <div class="col-sm-3 buttons">
+                <button class="btn btn-info" id="download">Download</button>
+            </div>
+            <div class="col buttons">
+                <input class="form-control" type="text" id="search" placeholder="Search">
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
+        crossorigin="anonymous"></script>
+
+    <script>
+        $(document).ready(function () {
+            var options = {
+                "accesskey": "b4fa4b89badab21f2109fecdf05bbdced849e63d84e70c849d3dc735750e6bf8"
+            }
+            var current_image;
+
+            function getRandom(query = '') {
+                var url = "https://api.unsplash.com/photos/random?w=1920&h=1080&orientation=landscape";
+                if(query) url += "&query=" + query;
+                var accessKey = options["accesskey"];
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        console.log(data);
+                        //var everything = "<img src='" + data['urls']['custom'] + "'>"
+                        $('.background').css('background-image', 'url("' + data['urls']['custom'] + '")');
+                        current_image = data;
+                    },
+                    error: function (error) {
+                        console.error(error);
+                        console.error(accessKey);
+                        $('.background').html('<div class="alert alert-danger" role="alert">Rate Limit Reached: <button class="btn btn-danger" id="api">Click</button> to change to secondary API key</div>')
+
+                        $("#api").click(function (e) {
+                            options["accesskey"] = 'dfdfa4f2d7bd2c1be0a34e3dcdef9a788eaeaf7c21365b3332e1ec1f27bf7702';
+                            console.log(options['accesskey']);
+                            $('.background').html('<div class="alert alert-warning" role="alert">Click or Submit again</div>')
+                        })
+                    },
+                    beforeSend: setHeader
+                })
+                function setHeader(xhr) {
+                    xhr.setRequestHeader('Authorization', 'Client-ID ' + accessKey);
+                }
+            }
+
+            function run() {
+                getRandom();
+            }
+
+            $("#random").click(function (e) {
+                getRandom();
+                $('.background').html('')
+            })
+
+            $("#download").click(function (e) {
+                console.log("download initiated");
+                console.log(current_image.links.download_location)
+                $('.background').html('')
+                var accessKey = options["accesskey"];
+                $.ajax({
+                    url: current_image.links.download_location,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        console.log(data);
+                        downloadURI(data.url, current_image.id);
+                    },
+                    error: function (error) {
+                        console.error(error);
+                        console.error(accessKey);
+                        $('.background').html('<div class="alert alert-danger" role="alert">Rate Limit Reached: <button class="btn btn-danger" id="api">Click</button> to change to secondary API key</div>')
+
+                        $("#api").click(function (e) {
+                            options["accesskey"] = 'dfdfa4f2d7bd2c1be0a34e3dcdef9a788eaeaf7c21365b3332e1ec1f27bf7702';
+                            console.log(options['accesskey']);
+                        })
+                    },
+                    beforeSend: setHeader
+                })
+                function setHeader(xhr) {
+                    xhr.setRequestHeader('Authorization', 'Client-ID ' + accessKey);
+                }
+                function downloadURI(uri, name) {
+                    var link = document.createElement("a");
+                    link.href = uri;
+                    link.target = "_blank";
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    delete link;
+                }
+            })
+
+            $('#search').bind("enterKey", function (e) {
+                var value = $('#search').val();
+                //do stuff here
+                console.log(value);
+                getRandom(value);
+            });
+            $('#search').keyup(function (e) {
+                if (e.keyCode == 13) {
+                    $(this).trigger("enterKey");
+                }
+            });
+
+
+            run()
+        });
+    </script>
+</body>
